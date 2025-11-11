@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spendlens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- UPDATED: Replaced Flask 'url_for' with root-relative paths -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="manifest" href="/static/json/manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+  <link rel="icon" href="/static/logo.png" type="image/png">
+
+</head>
+
+<script>
+  // Service worker logic remains client-side
+  if ('serviceWorker' in navigator) {
+    // FIX: Replaced Flask 'url_for' with a root-relative path to fix the protocol error
+    navigator.serviceWorker.register("/static/js/service-worker.js");
+  }
+</script>
+
+
+<body class="layout">
+  
+  <div class="background-animation">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <aside class="sidebar" id="sidebar" aria-hidden="false">
+    <div class="sidebar-header">
+      <button id="collapse-toggle" class="collapse-toggle" aria-label="Collapse sidebar"><i class="fa-solid fa-angles-left"></i></button>
+      <span class="brand"><i class="fa-solid fa-chart-pie"></i><b>Spendlens</b></span>
+      <button id="sidebar-close" class="sidebar-close" aria-label="Close navigation"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a data-view="home" class="active"><i class="fas fa-house"></i><span class="label">Home</span></a></li>
+        <li><a data-view="dashboard"><i class="fas fa-tachometer-alt"></i><span class="label">Dashboard</span></a></li>
+        <li><a data-view="add-expense"><i class="fas fa-plus"></i><span class="label">Add Expense</span></a></li>
+        <li><a data-view="all-expenses"><i class="fas fa-wallet"></i><span class="label">All Expenses</span></a></li>
+        <li><a data-view="bill-photos"><i class="fas fa-receipt"></i><span class="label">Bills</span></a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar" id="sidebar-avatar-initial">U</div>
+      <div class="user-info"><h4>Hi, <span id="user-name-display">User</span></h4><p>Personal Finance</p></div>
+      <button id="rename-btn" class="rename-btn-style" aria-label="Rename User"><i class="fa-solid fa-pen-to-square"></i></button>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay"></div>
+
+  <main class="main-content">
+    <div class="topbar">
+      <button class="menu-toggle-btn" id="menu-toggle" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+      <div class="right-actions" id="right-actions-container">
+        <div class="filter-controls" id="filter-controls-group">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="personal"><i class="fas fa-user"></i> Personal</button>
+          <button class="filter-btn" data-filter="organization"><i class="fas fa-building"></i> Organization</button>
+        </div>
+        
+        <div id="time-filter-group" class="time-filter-group">
+            <select id="time-filter-select" class="topbar-select" aria-label="Time period filter">
+                <option value="this-month">This Month</option>
+                <option value="last-7-days">Last 7 Days</option>
+                <option value="last-30-days">Last 30 Days</option>
+                <option value="this-year">This Year</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+        
+        <div class="topbar-actions-group">
+          <button id="mobile-filter-btn" class="ghost-btn">
+            <i class="fas fa-filter"></i><span> Filter</span>
+          </button>
+          <button id="set-income-btn" class="ghost-btn"><i class="fas fa-chart-line"></i><span> Set Income</span></button>
+          <button id="set-budget-btn" class="ghost-btn"><i class="fas fa-bullseye"></i><span> Set Budget</span></button>
+          <button id="header-add-btn" class="add-btn"><i class="fas fa-plus"></i><span> Add Expense</span></button>
+        </div>
+      </div>
+    </div>
+
+    <header class="header">
+      <div class="header-title">
+        <h1 id="dashboard-title">Home</h1>
+        <p id="dashboard-subtitle">Welcome to Spendlens</p>
+      </div>
+    </header>
+
+    <!-- All other view divs (home-view, dashboard-view, etc.) remain exactly the same -->
+    <div id="home-view" class="view active">
+      
+      <section id="home-hero-empty" class="home-hero fade-in-up">
+        <div class="hero-icon"><i class="fa-solid fa-chart-pie"></i></div>
+        <h2>Welcome to <span>Spendlens</span></h2>
+        <p class="lead">Take control of your finances. Spendlens helps you understand, track, and improve your spending habits in a simple, visual way.</p>
+        <button id="home-cta-add-first" class="btn primary btn-lg"><i class="fas fa-plus"></i> Add Your First Expense</button>
+      </section>
+
+      <section id="home-hero-active" class="home-hero fade-in-up hidden">
+        <h2>Welcome back to <span>Spendlens</span></h2>
+        <p class="lead">Your financial overview is ready. Continue tracking to reach your goals.</p>
+        <div class="hero-actions">
+            <button id="home-cta-manage" class="btn primary btn-lg"><i class="fas fa-tachometer-alt"></i> Manage Expenses</button>
+            <button id="home-cta-add" class="btn secondary btn-lg"><i class="fas fa-plus"></i> Add Expense</button>
+        </div>
+      </section>
+
+      <div id="home-summary-section" class="cards-container home-summary hidden">
+        <div class="stat-card card-pop" style="--delay:.05s">
+          <div class="icon income"><i class="fas fa-hand-holding-usd"></i></div>
+          <div class="info"><p>THIS MONTH'S INCOME</p><h3 id="home-this-month-income">₹0.00</h3><p id="home-income-remark">Tap "Set Income" to start</p></div>
+        </div>
+        <div class="stat-card card-pop" style="--delay:.15s">
+          <div class="icon dollar"><i class="fas fa-rupee-sign"></i></div>
+          <div class="info"><p>SPENT SO FAR</p><h3 id="home-this-month">₹0.00</h3><p>Of your income</p></div>
+        </div>
+        <div class="stat-card card-pop" style="--delay:.25s">
+          <div class="icon calendar"><i class="fas fa-calendar-day"></i></div>
+          <div class="info"><p>DAILY AVG</p><h3 id="home-daily-avg">₹0.00</h3><p>For current month</p></div>
+        </div>
+        <div class="stat-card card-pop" style="--delay:.35s">
+          <div class="icon spent"><i class="fas fa-bullseye"></i></div>
+          <div class="info"><p>REMAINING BALANCE</p><h3 id="home-balance">—</h3><p id="home-budget-remark">After all expenses</p></div>
+        </div>
+      </div>
+
+      <section class="home-guide-box fade-in-up" style="--delay: .4s">
+          <div class="guide-icon"><i class="fa-solid fa-circle-info"></i></div>
+          <div class="guide-content">
+              <h3>How to use Spendlens</h3>
+              <p>Use <b>Add Expense</b> to record your daily purchases. Set a <b>Monthly Budget</b> to get alerts if you overspend. Track your <b>Mood</b> with every transaction to understand your emotional spending triggers.</p>
+          </div>
+      </section>
+
+      <section id="home-features-section" class="home-features-grid">
+        <div class="feature-card card-pop" style="--delay:.5s">
+          <i class="fa-solid fa-chart-line"></i>
+          <h3>Visualize Trends</h3>
+          <p>See where your money goes with dashboard charts for categories and spending over time.</p>
+        </div>
+        <div class="feature-card card-pop" style="--delay:.6s">
+          <i class="fa-solid fa-bullseye"></i>
+          <h3>Set Budgets</h3>
+          <p>Define your monthly budget and keep your financial goals on track.</p>
+        </div>
+        <div class="feature-card card-pop" style="--delay:.7s">
+          <i class="fa-solid fa-face-smile"></i>
+          <h3>Track Moods</h3>
+          <p>Reflect on your purchases by adding a mood to each expense for mindful spending.</p>
+        </div>
+      </section>
+
+    </div>
+
+    <div id="dashboard-view" class="view">
+      <div id="budget-banner" class="budget-banner hidden">
+        <div class="budget-banner-summary">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="budget-banner-text">You have crossed your monthly budget.</span>
+          <button id="budget-banner-toggle" class="budget-banner-toggle">View Details <i class="fas fa-chevron-down"></i></button>
+        </div>
+        <div id="budget-banner-details" class="budget-banner-details">
+          </div>
+      </div>
+      <div class="cards-container">
+        <div class="stat-card"><div class="icon income"><i class="fas fa-hand-holding-usd"></i></div><div class="info"><p>MONTHLY INCOME</p><h3 id="monthly-income">₹0.00</h3><p>Total received</p></div></div>
+        <div class="stat-card"><div class="icon dollar"><i class="fas fa-rupee-sign"></i></div><div class="info"><p>THIS MONTH SPENT</p><h3 id="this-month-spent">₹0.00</h3><p>Expenses so far</p></div></div>
+        <div class="stat-card"><div class="icon calendar"><i class="fas fa-calendar-day"></i></div><div class="info"><p>DAILY AVERAGE</p><h3 id="daily-average">₹0.00</h3><p>Current month</p></div></div>
+        <div class="stat-card"><div class="icon transactions"><i class="fas fa-wallet"></i></div><div class="info"><p>REMAINING BALANCE</p><h3 id="remaining-balance">₹0.00</h3><p>Income - Expenses</p></div></div>
+      </div>
+      <div class="charts-container">
+        <div class="card chart-card"><h3>Spending Trend</h3><canvas id="spending-trend-chart"></canvas></div>
+        <div class="card chart-card"><h3>The Categories</h3><canvas id="categories-chart"></canvas></div>
+      </div>
+      <div class="lists-container">
+        <div class="card recent-expenses"><h3>Recent Expenses</h3><ul id="recent-expenses-list"></ul></div>
+        <div class="card upcoming-payments">
+          <div class="upcoming-payments-header">
+              <h3>Upcoming Payments</h3>
+              <button id="add-payment-btn" class="btn primary" style="padding: 0.5rem 1rem;"><i class="fas fa-plus"></i> Add Payment</button>
+          </div>
+          <ul id="upcoming-payments-list">
+            </ul>
+        </div>
+        </div>
+    </div>
+
+    <div id="add-expense-view" class="view">
+      <div class="card">
+        <h2>Add New Expense</h2>
+        <p>Record your spending quickly and easily</p>
+        <form id="add-expense-form">
+          <div class="form-group">
+            <label>Expense Type *</label>
+            <div class="expense-type-selector">
+              <div class="type-box selected" data-type="personal"><i class="fas fa-user"></i><span>Personal</span></div>
+              <div class="type-box" data-type="organization"><i class="fas fa-building"></i><span>Organization</span></div>
+            </div>
+            <input type="hidden" id="expense-type" value="personal">
+          </div>
+          <div class="form-section">
+            <div class="form-group"><label for="expense-amount">Amount *</label><input type="number" id="expense-amount" placeholder="₹ 0.00" required step="0.01"></div>
+            <div class="form-group"><label for="expense-category">Category *</label><select id="expense-category" required>
+              <option>Food & Dining</option><option>Travel</option><option>Education</option><option>Entertainment</option><option>Shopping</option><option>Other</option>
+            </select></div>
+          </div>
+          <div class="form-group"><label for="expense-desc">Description *</label><input type="text" id="expense-desc" placeholder="What did you spend on?" required></div>
+          <div class="form-section">
+            <div class="form-group"><label for="expense-date">Date *</label><input type="date" id="expense-date" required></div>
+            <div class="form-group"><label for="payment-method">Payment Method</label><select id="payment-method"><option>Credit Card</option><option>Debit Card</option><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select></div>
+          </div>
+          <div class="form-group"><label for="mood">How did this purchase make you feel? (Mood)</label><select id="mood"><option value="">Select mood (optional)</option><option value="😊 Happy">😊 Happy</option><option value="😌 Satisfied">😌 Satisfied</option><option value="😐 Neutral">😐 Neutral</option><option value="😕 Unsure">😕 Unsure</option><option value="😞 Regret">😞 Regret</option></select></div>
+          <div class="form-group"><label for="location">Location (Optional)</label><input type="text" id="location" placeholder="Where did you make this purchase?"></div>
+          
+          <div class="form-group">
+              <label for="bill-photo-upload">Bill/Receipt Photo (Optional)</label>
+              <input type="file" id="bill-photo-upload" accept="image/*" />
+          </div>
+
+          <div class="form-actions"><button type="button" class="cancel-btn">Cancel</button><button type="submit" class="save-btn">Save Expense</button></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="all-expenses-view" class="view">
+      <div class="card">
+        <h2>All Expenses</h2>
+        <div class="table-container">
+          <table class="expenses-table">
+            <thead>
+              <tr>
+                <th data-label="Date">Date</th>
+                <th data-label="Description">Description</th>
+                <th data-label="Category">Category</th>
+                <th data-label="Amount">Amount</th>
+                <th data-label="Payment Method">Payment Method</th>
+                <th data-label="Type">Type</th>
+                <th data-label="Location">Location</th>
+                <th data-label="Mood">Mood</th>
+                <th data-label="Image">Bill</th>
+                <th data-label="Action">Action</th>
+              </tr>
+            </thead>
+            <tbody id="all-expenses-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div id="bill-photos-view" class="view">
+        <div class="card">
+            <h2>Bills & Receipts</h2>
+            <p>Photos added from the 'Add Expense' view appear here. Click on an image to view it larger.</p>
+
+            <div class="bill-gallery" id="bill-gallery">
+                </div>
+        </div>
+    </div>
+  </main>
+
+  
+  <nav class="mobile-bottom-nav">
+    <a data-view="home" class="mobile-nav-link active">
+      <i class="fas fa-house"></i>
+      <span>Home</span>
+    </a>
+    <a data-view="dashboard" class="mobile-nav-link">
+      <i class="fas fa-tachometer-alt"></i>
+      <span>Dashboard</span>
+    </a>
+    <a data-view="add-expense" class="mobile-nav-link add-expense-fab">
+      <i class="fas fa-plus"></i>
+      <span>Add</span> </a>
+    <a data-view="all-expenses" class="mobile-nav-link">
+      <i class="fas fa-wallet"></i>
+      <span>Expenses</span>
+    </a>
+    <a data-view="bill-photos" class="mobile-nav-link">
+      <i class="fas fa-receipt"></i>
+      <span>Bills</span>
+    </a>
+  </nav>
+    
+  <!-- All modal HTML divs (welcome-modal, budget-modal, etc.) remain exactly the same -->
+  <div id="welcome-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="welcome-modal-title"><i class="fa-solid fa-hand-wave"></i> Welcome to Spendlens</h3>
+        <p class="modal-subtitle">What should we call you? (Data is saved to your secure database)</p>
+      </div>
+      <form id="welcome-form" class="modal-body">
+        <div class="form-group">
+          <label for="user-name-input">Your Name *</label>
+          <input type="text" id="user-name-input" placeholder="Enter your name" required maxlength="20" />
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn primary" id="welcome-save-btn">Get Started</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="budget-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="budget-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="budget-modal-close" aria-label="Close budget modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="budget-modal-title"><i class="fa-solid fa-bullseye"></i> Set Monthly Budget</h3><p class="modal-subtitle">Choose an amount to cap your spending for the current month.</p></div>
+      
+      <form id="budget-form" class="modal-body">
+        <div class="form-group"><label for="budget-month">Month</label><input type="text" id="budget-month" readonly /></div>
+        
+        <div class="form-group">
+            <label for="budget-amount">Total Budget Amount (₹) *</label>
+            <input type="number" id="budget-amount" placeholder="₹ 500.00" step="0.01" min="0" required />
+        </div>
+        
+        <hr style="border:0; border-top:1px solid #eee; margin: 1.5rem 0;">
+        
+        <h4 style="margin: 0 0 1rem 0; color: #000;">Category Budgets (Optional)</h4>
+        <p class="modal-subtitle" style="margin-top:-0.75rem; margin-bottom: 1rem;">Set specific budgets for categories. Must be less than your total budget.</p>
+        
+        <div id="category-budgets-container">
+            </div>
+        
+        <button type="button" id="add-category-budget-btn" class="btn secondary" style="width: 100%; text-align: center; background: #f9f9f9;">
+            <i class="fas fa-plus"></i> Add Category Budget
+        </button>
+        
+        <div class="modal-actions" style="margin-top: 1.5rem;">
+            <button type="button" class="btn secondary" id="budget-cancel">Cancel</button>
+            <button type="submit" class="btn primary">Save Budget</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <div id="income-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="income-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="income-modal-close" aria-label="Close income modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="income-modal-title"><i class="fas fa-hand-holding-usd"></i> Set Monthly Income</h3><p class="modal-subtitle">Set your total expected income for the current month.</p></div>
+      <form id="income-form" class="modal-body">
+        <div class="form-group"><label for="income-month">Month</label><input type="text" id="income-month" readonly /></div>
+        <div class="form-group"><label for="income-amount">Income Amount (₹) *</label><input type="number" id="income-amount" placeholder="₹ 0.00" step="0.01" min="0" required /></div>
+        <div class="modal-actions"><button type="button" class="btn secondary" id="income-cancel">Cancel</button><button type="submit" class="btn primary">Save Income</button></div>
+      </form>
+    </div>
+  </div>
+  
+  <div id="add-payment-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="add-payment-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="add-payment-modal-close" aria-label="Close payment modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="add-payment-modal-title"><i class="fas fa-calendar-alt"></i> Add Upcoming Payment</h3><p class="modal-subtitle">Schedule a future payment or bill.</p></div>
+      <form id="add-payment-form" class="modal-body">
+        <div class="form-group"><label for="payment-desc">Description *</label><input type="text" id="payment-desc" placeholder="e.g. Electricity Bill, Rent" required /></div>
+        <div class="form-group"><label for="payment-amount">Amount (₹) *</label><input type="number" id="payment-amount" placeholder="₹ 0.00" step="0.01" min="0" required /></div>
+        <div class="form-group"><label for="payment-date">Due Date *</label><input type="date" id="payment-date" required /></div>
+        
+        <div class="form-group">
+            <input type="checkbox" id="payment-repeat" style="width: auto; margin-right: 0.5rem;"/>
+            <label for="payment-repeat" style="display: inline;">Repeat this payment?</label>
+        </div>
+        <div class="form-group hidden" id="repeat-after-group">
+            <label for="payment-repeat-days">Repeat After (Days) *</label>
+            <input type="number" id="payment-repeat-days" placeholder="e.g. 30 for monthly" min="1" disabled />
+        </div>
+
+        <div class="modal-actions"><button type="button" class="btn secondary" id="payment-cancel">Cancel</button><button type="submit" class="btn primary">Schedule Payment</button></div>
+      </form>
+    </div>
+  </div>
+  <div id="delete-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="delete-modal-close" aria-label="Close delete modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="delete-modal-title"><i class="fa-solid fa-trash-can"></i> Confirm Deletion</h3><p class="modal-subtitle">Are you sure you want to delete the selected expense?</p></div>
+      <div class="modal-body">
+        <p>This action **cannot be undone**.</p>
+        <p>Expense to be deleted: <b id="expense-to-delete-info"></b></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="delete-cancel">Cancel</button>
+        <button type="button" class="btn danger" id="delete-confirm"><i class="fa-solid fa-trash-can"></i> Delete Permanently</button>
+      </div>
+    </div>
+  </div>
+
+    <div id="delete-payment-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="delete-payment-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="delete-payment-modal-close" aria-label="Close delete payment modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="delete-payment-modal-title"><i class="fa-solid fa-trash-can"></i> Confirm Payment Deletion</h3><p class="modal-subtitle">Are you sure you want to delete this upcoming payment?</p></div>
+      <div class="modal-body">
+        <p>This action **cannot be undone**.</p>
+        <p>Payment to be deleted: <b id="payment-to-delete-info"></b></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="delete-payment-cancel">Cancel</button>
+        <button type="button" class="btn danger" id="delete-payment-confirm"><i class="fa-solid fa-trash-can"></i> Delete Permanently</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="photo-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="photo-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="photo-modal-close" aria-label="Close photo modal"><i class="fa-solid fa-xmark"></i></button>
+      <img id="photo-modal-image" src="" alt="Bill Photo" />
+    </div>
+  </div>
+  
+  <div id="edit-expense-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="edit-expense-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="edit-expense-modal-close" aria-label="Close edit modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header"><h3 id="edit-expense-modal-title"><i class="fas fa-pen-to-square"></i> Edit Expense</h3><p class="modal-subtitle">Update your transaction details.</p></div>
+      
+      <form id="edit-expense-form" class="modal-body">
+        <input type="hidden" id="edit-expense-id" />
+        
+        <div class="form-group">
+            <label>Expense Type *</label>
+            <div class="expense-type-selector" id="edit-expense-type-selector">
+              <div class="type-box" data-type="personal"><i class="fas fa-user"></i><span>Personal</span></div>
+              <div class="type-box" data-type="organization"><i class="fas fa-building"></i><span>Organization</span></div>
+            </div>
+            <input type="hidden" id="edit-expense-type" value="personal">
+          </div>
+          
+          <div class="form-section">
+            <div class="form-group"><label for="edit-expense-amount">Amount *</label><input type="number" id="edit-expense-amount" placeholder="₹ 0.00" required step="0.01"></div>
+            <div class="form-group"><label for="edit-expense-category">Category *</label><select id="edit-expense-category" required>
+              <option>Food & Dining</option><option>Travel</option><option>Education</option><option>Entertainment</option><option>Shopping</option><option>Other</option>
+            </select></div>
+          </div>
+          
+          <div class="form-group"><label for="edit-expense-desc">Description *</label><input type="text" id="edit-expense-desc" placeholder="What did you spend on?" required></div>
+          
+          <div class="form-section">
+            <div class="form-group"><label for="edit-expense-date">Date *</label><input type="date" id="edit-expense-date" required></div>
+            <div class="form-group"><label for="edit-payment-method">Payment Method</label><select id="edit-payment-method"><option>Credit Card</option><option>Debit Card</option><option>Cash</option><option>UPI</option><option>Bank Transfer</option></select></div>
+          </div>
+          
+          <div class="form-group"><label for="edit-mood">How did this purchase make you feel? (Mood)</label><select id="edit-mood"><option value="">Select mood (optional)</option><option value="😊 Happy">😊 Happy</option><option value="😌 Satisfied">😌 Satisfied</option><option value="😐 Neutral">😐 Neutral</option><option value="😕 Unsure">😕 Unsure</option><option value="😞 Regret">😞 Regret</option></select></div>
+          
+          <div class="form-group"><label for="edit-location">Location (Optional)</label><input type="text" id="edit-location" placeholder="Where did you make this purchase?"></div>
+
+          <div class="form-group">
+              <label>Bill/Receipt Photo</label>
+              <div id="edit-photo-manager">
+                  <div id="edit-photo-preview-container" class="hidden">
+                      <img id="edit-bill-photo-preview" src="" alt="Bill Preview" />
+                      <div class="photo-actions">
+                          <button type="button" id="edit-view-photo-btn" class="btn secondary"><i class="fas fa-eye"></i> View</button>
+                          <button type="button" id="edit-delete-photo-btn" class="btn danger"><i class="fas fa-trash"></i> Delete Photo</button>
+                      </div>
+                  </div>
+                  
+                  <div id="edit-photo-upload-container" class="hidden">
+                      <input type="file" id="edit-bill-photo-upload" accept="image/*" />
+                      <p class="form-note">Upload a new photo for this expense.</p>
+                  </div>
+              </div>
+          </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn secondary" id="edit-expense-cancel">Cancel</button>
+            <button type="submit" class="btn primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="mobile-filter-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mobile-filter-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="mobile-filter-close" aria-label="Close filter modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+          <h3 id="mobile-filter-title"><i class="fas fa-filter"></i> Filter by Type</h3>
+      </div>
+      <div class="modal-body" id="mobile-filter-options" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          </div>
+    </div>
+  </div>
+
+  <div id="notification-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="notification-modal-title">
+    <div class="modal-dialog">
+      <button class="modal-close" id="notification-modal-close" aria-label="Close notification"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+          <h3 id="notification-modal-title"><i class="fa-solid fa-circle-info"></i> Notification</h3>
+      </div>
+      <div class="modal-body">
+          <p id="notification-modal-message">This is a notification message.</p>
+      </div>
+      <div class="modal-actions">
+          <button type="button" class="btn primary" id="notification-modal-ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- UPDATED: Replaced Flask 'url_for' with root-relative path -->
+  <script src="/static/js/script.js"></script>
+</body>
+</html>
