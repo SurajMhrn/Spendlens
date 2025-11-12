@@ -8,24 +8,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-DATABASE_URL = os.getenv('KV_URL')
+# Vercel will provide this environment variable
+DATABASE_URL = os.getenv('KV_URL') 
 
-# --- Database Helper Functions ---
+# --- Database Helper Functions (Using Redis) ---
 
 def get_db():
     """Get a connection to the Vercel KV (Redis) database."""
     if 'db' not in g:
-        # The Vercel KV_URL is a Redis connection string
-        # decode_responses=True makes sure we get strings back, not bytes
         try:
             if not DATABASE_URL:
                 raise ValueError("KV_URL environment variable is not set.")
+            # decode_responses=True makes sure we get strings back, not bytes
             g.db = Redis.from_url(DATABASE_URL, decode_responses=True)
             g.db.ping() # Test the connection
         except Exception as e:
-            # Handle connection errors
             print(f"Error connecting to Redis: {e}")
-            g.db = None # Set db to None so we can handle it
+            g.db = None
     return g.db
 
 @app.teardown_appcontext
@@ -41,7 +40,6 @@ def parse_redis_hash(redis_hash, sort_key=None, reverse=False):
     try:
         items = [json.loads(item_json) for item_json in redis_hash.values()]
         if sort_key:
-            # Handle potential None values in sort key
             items.sort(key=lambda x: x.get(sort_key, 0) or 0, reverse=reverse)
         return items
     except Exception:
@@ -236,3 +234,87 @@ def delete_photo(expense_id):
 # This is used by Vercel to run the app
 if __name__ == '__main__':
     app.run(debug=True)
+```eof
+```markdown:requirements.txt (REPLACE your old one with this)
+Flask
+redis
+python-dotenv
+gunicorn
+```eof
+```markdown:.gitignore (ADD this file to your project)
+# Environment variables
+.env
+.env.*
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Vercel
+.vercel/
+
+# IDE files
+.vscode/
+.idea/
+
+# SQLite Database - DO NOT DEPLOY
+*.db
+*.db-journal
+schema.sql
+```eof
+
+---
+
+## 2. 🚀 Step-by-Step Deployment Guide
+
+Follow these steps exactly.
+
+### Step 1: Update Your Local Project
+
+1.  **Replace `app.py`:** Delete your old `app.py` and save the new one above in its place.
+2.  **Replace `requirements.txt`:** Replace your old `requirements.txt` [cite: 257] with the new one above. This adds `redis` and `gunicorn`, which Vercel needs.
+3.  **Add `.gitignore`:** Create a new file named `.gitignore` in your project's main folder and paste the content above into it.
+4.  **Delete Old Files:** You can now safely delete `spendlens.db` [cite: 1] and `schema.sql` from your project folder. They are not needed for the Vercel deployment.
+
+### Step 2: Push to GitHub
+
+Vercel deploys directly from a GitHub repository. If you haven't done this yet, you need to:
+
+1.  Create a new, empty repository on [GitHub](https://github.com/new).
+2.  In your project folder, run these commands in your terminal:
+    ```bash
+    git init -b main
+    git add .
+    git commit -m "Migrate to Vercel KV for deployment"
+    git remote add origin <YOUR_GITHUB_REPO_URL>
+    git push -u origin main
+    ```
+    *(If you've already connected to GitHub, just run `git add .`, `git commit -m "Fix for Vercel"`, and `git push`)*
+
+### Step 3: Create the Vercel Project & Database
+
+This is the most important step.
+
+1.  Sign in to your [Vercel](https://vercel.com) account.
+2.  On your dashboard, click **Add New...** > **Project**.
+3.  **Import** the GitHub repository you just pushed your code to.
+4.  Vercel will detect it's a Flask app. Before you click "Deploy", click the **Storage** tab at the top.
+5.  Find **KV (New)** and click **Create Database**.
+6.  Give it a name (like `spendlens-db`) and select a region.
+7.  After creating it, **Connect** it to your project using the dropdown menu and click the **"Connect"** button.
+    
+This connection step is what automatically gives your app the secret `KV_URL` it needs to work.
+
+### Step 4: Deploy
+
+1.  Go back to the **Deployments** tab for your project.
+2.  Vercel may have already started a new deployment from your latest `git push`. If not, trigger a new one by clicking the "Redeploy" button.
+3.  Vercel will now:
+    * Install `Flask`, `redis`, and `gunicorn` from your new `requirements.txt`.
+    * Build the app using your new `app.py`.
+    * Connect to your Vercel KV database using the `KV_URL`.
+
+Once it's finished, your site will be live and fully working!
