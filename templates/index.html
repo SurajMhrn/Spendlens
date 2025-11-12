@@ -10,10 +10,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <!-- UPDATED: Replaced Flask 'url_for' with root-relative paths -->
+  <!-- These paths are now correct for Vercel -->
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="manifest" href="/static/json/manifest.json">
   <meta name="theme-color" content="#4CAF50">
+  <!-- Note: You'll need to move your logo.png to /static/images/logo.png -->
   <link rel="icon" href="/static/images/logo.png" type="image/png">
 
 </head>
@@ -21,7 +22,7 @@
 <script>
   // Service worker logic remains client-side
   if ('serviceWorker' in navigator) {
-    // FIX: Replaced Flask 'url_for' with a root-relative path to fix the protocol error
+    // This path is now correct for Vercel
     navigator.serviceWorker.register("/static/js/service-worker.js");
   }
 </script>
@@ -96,7 +97,7 @@
       </div>
     </header>
 
-    <!-- All other view divs (home-view, dashboard-view, etc.) remain exactly the same -->
+    <!-- (All your view divs remain here, unchanged) -->
     <div id="home-view" class="view active">
       
       <section id="home-hero-empty" class="home-hero fade-in-up">
@@ -291,7 +292,7 @@
     </a>
   </nav>
     
-  <!-- All modal HTML divs (welcome-modal, budget-modal, etc.) remain exactly the same -->
+  <!-- (All your modal divs remain here, unchanged) -->
   <div id="welcome-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -503,8 +504,7 @@
   </div>
 
 
-  <!-- UPDATED: Replaced Flask 'url_for' with root-relative path -->
+  <!-- This path is now correct for Vercel -->
   <script src="/static/js/script.js"></script>
 </body>
-
 </html>
